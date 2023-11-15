@@ -13,7 +13,6 @@
 
 
 import util
-from util import raiseNotDefined
 from game import Agent
 from game import Directions
 from keyboardAgents import KeyboardAgent
@@ -68,10 +67,7 @@ class BustersAgent:
     "An agent that tracks and displays its beliefs about ghost positions."
 
     def __init__( self, index = 0, inference = "ExactInference", ghostAgents = None, observeEnable = True, elapseTimeEnable = True):
-        try:
-            inferenceType = util.lookup(inference, globals())
-        except Exception:
-            inferenceType = util.lookup('inference.' + inference, globals())
+        inferenceType = util.lookup(inference, globals())
         self.inferenceModules = [inferenceType(a) for a in ghostAgents]
         self.observeEnable = observeEnable
         self.elapseTimeEnable = elapseTimeEnable
@@ -127,16 +123,12 @@ from game import Directions
 class GreedyBustersAgent(BustersAgent):
     "An agent that charges the closest ghost."
 
-    def registerInitialState(self, gameState: busters.GameState):
+    def registerInitialState(self, gameState):
         "Pre-computes the distance between every two points."
         BustersAgent.registerInitialState(self, gameState)
         self.distancer = Distancer(gameState.data.layout, False)
-    
-    ########### ########### ###########
-    ########### QUESTION 8  ###########
-    ########### ########### ###########
 
-    def chooseAction(self, gameState: busters.GameState):
+    def chooseAction(self, gameState):
         """
         First computes the most likely position of each ghost that has
         not yet been captured, then chooses an action that brings
@@ -149,5 +141,26 @@ class GreedyBustersAgent(BustersAgent):
             [beliefs for i, beliefs in enumerate(self.ghostBeliefs)
              if livingGhosts[i+1]]
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
-        "*** END YOUR CODE HERE ***"
+        mazeDistance = util.Counter()
+
+        # Loop over all ghost distributions to find the most likely position
+        # of each living ghost
+        for ghostDistribution in livingGhostPositionDistributions:
+            mostLikelyPosition = ghostDistribution.argMax()
+            distance = self.distancer.getDistance(pacmanPosition, mostLikelyPosition)
+            mazeDistance[mostLikelyPosition] = -distance
+
+        # Select the closest ghost position and distance
+        # Note that we stored -distance since we can only extract argMax
+        closestGhostPosition = mazeDistance.argMax()
+        closestGhostDistance = -mazeDistance[closestGhostPosition]
+
+        # Loop over legal actions and choose the one that reduces the maze
+        # distance to the closest ghost
+        for action in legal:
+            successorPosition = Actions.getSuccessor(pacmanPosition, action)
+            distance = self.distancer.getDistance(successorPosition, closestGhostPosition)
+            if distance < closestGhostDistance:
+                return action
+
+        return None
