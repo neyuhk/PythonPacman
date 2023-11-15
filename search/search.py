@@ -19,6 +19,7 @@ Pacman agents (in searchAgents.py).
 
 import util
 
+
 class SearchProblem:
     """
     This class outlines the structure of a search problem, but doesn't implement
@@ -70,9 +71,10 @@ def tinyMazeSearch(problem):
     from game import Directions
     s = Directions.SOUTH
     w = Directions.WEST
-    return  [s, s, w, s, w, w, s, w]
+    return [s, s, w, s, w, w, s, w]
 
-def depthFirstSearch(problem: SearchProblem):
+
+def depthFirstSearch(problem):
     """
     Search the deepest nodes in the search tree first.
 
@@ -87,17 +89,118 @@ def depthFirstSearch(problem: SearchProblem):
     print("Start's successors:", problem.getSuccessors(problem.getStartState()))
     """
     "*** YOUR CODE HERE ***"
+
+    listStack = util.Stack()
+
+    visited = []
+    path = []
+
+    startPos = problem.getStartState()
+
+    listStack.push((startPos, path, 0))
+
+    while not listStack.isEmpty():
+
+        curNode = listStack.pop()
+        path = curNode[1]
+        pos = curNode[0]
+
+        if pos not in visited:
+            visited.append(pos)
+
+        if problem.isGoalState(pos):
+            return path
+
+        successors = problem.getSuccessors(pos)
+
+        for successor in successors:
+            if successor[0] not in visited:
+                newPos = successor[0]
+                newPath = path + [successor[1]]
+                listStack.push((newPos, newPath, successor[2]))
     util.raiseNotDefined()
 
-def breadthFirstSearch(problem: SearchProblem):
+
+def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
     "*** YOUR CODE HERE ***"
+
+    listQueue = util.Queue()
+
+    visited = []
+    path = []
+
+    startPos = problem.getStartState()
+
+    listQueue.push((startPos, path, 0))
+
+    while not listQueue.isEmpty():
+
+        curNode = listQueue.pop()
+        path = curNode[1]
+        pos = curNode[0]
+
+        if pos not in visited:
+            visited.append(pos)
+
+        if problem.isGoalState(pos):
+            return path
+
+        successors = problem.getSuccessors(pos)
+
+        for successor in successors:
+            if successor[0] in visited or successor[0] in (node[0] for node in listQueue.list):
+                continue
+            else:
+                newPos = successor[0]
+                newPath = path + [successor[1]]
+                listQueue.push((newPos, newPath, successor[2]))
     util.raiseNotDefined()
 
-def uniformCostSearch(problem: SearchProblem):
+
+def uniformCostSearch(problem):
     """Search the node of least total cost first."""
     "*** YOUR CODE HERE ***"
+
+    pQueue = util.PriorityQueue()
+    visited = []
+    path = []
+    startPos = problem.getStartState()
+    pQueue.push((startPos, path), 0)
+
+    while not pQueue.isEmpty():
+        curNode = pQueue.pop()
+        path = curNode[1]
+        pos = curNode[0]
+
+        if pos not in visited:
+            visited.append(pos)
+
+        if problem.isGoalState(pos):
+            return path
+
+        successors = problem.getSuccessors(pos)
+
+        def getPriorityOfNode(priority_queue, node):
+            for item in priority_queue.heap:
+                if item[2][0] == node:
+                    return problem.getCostOfActions(item[2][1])
+
+        for successor in successors:
+            if successor[0] not in visited and (successor[0] not in (node[2][0] for node in pQueue.heap)):
+                new_path = path + [successor[1]]
+                new_priority = problem.getCostOfActions(new_path)
+                pQueue.push((successor[0], new_path), new_priority)
+
+            elif successor[0] not in visited and (successor[0] in (node[2][0] for node in pQueue.heap)):
+                old_priority = getPriorityOfNode(pQueue, successor[0])
+                new_priority = problem.getCostOfActions(new_path)
+
+                if old_priority > new_priority:
+                    new_path = path + [successor[1]]
+                    pQueue.update((successor[0], new_path), new_priority)
     util.raiseNotDefined()
+
 
 def nullHeuristic(state, problem=None):
     """
@@ -106,9 +209,37 @@ def nullHeuristic(state, problem=None):
     """
     return 0
 
-def aStarSearch(problem: SearchProblem, heuristic=nullHeuristic):
+
+def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
+
+    pQueue = util.PriorityQueue()
+    path = []
+    visited = []
+    startPos = problem.getStartState()
+    pQueue.push((startPos, path), 0)
+
+    while not pQueue.isEmpty():
+        curNode = pQueue.pop()
+        path = curNode[1]
+        pos = curNode[0]
+
+        if problem.isGoalState(pos):
+            return path
+
+        if pos not in visited:
+            visited.append(pos)
+            successors = problem.getSuccessors(pos)
+
+            for successor in successors:
+                if successor[0] not in visited:
+                    newPath = path + [successor[1]]
+                    newPos = successor[0]
+
+                    f = problem.getCostOfActions(newPath) + heuristic(newPos, problem)
+                    pQueue.push((newPos, newPath), f)
+
     util.raiseNotDefined()
 
 
