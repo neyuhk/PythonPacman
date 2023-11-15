@@ -281,6 +281,94 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
       Your expectimax agent (question 4)
     """
 
+    def maxValue(self, gameState, agent, depth):
+        bestValue = float("-inf")
+        for action in gameState.getLegalActions(agent):
+            successor = gameState.generateSuccessor(agent, action)
+            v = self.expectimax(successor, agent+1, depth)
+            bestValue = max(bestValue, v)
+            if depth == 1 and bestValue == v: self.action = action
+        return bestValue
+
+    def probability(self, legalActions):
+        # The adversary chooses amongst their actions uniformly at random
+        return 1.0 / len(legalActions)
+
+    def expValue(self, gameState, agent, depth):
+        legalActions = gameState.getLegalActions(agent)
+        v = 0
+        for action in legalActions:
+            successor = gameState.generateSuccessor(agent, action)
+            p = self.probability(legalActions)
+            v += p * self.expectimax(successor, agent+1, depth)
+        return v
+
+    def expectimax(self, gameState, agent=0, depth=0):
+
+        agent = agent % gameState.getNumAgents()
+
+        if self.isTerminalState(gameState):
+            return self.evaluationFunction(gameState)
+
+        if self.isPacman(agent):
+            if depth < self.depth:
+                return self.maxValue(gameState, agent, depth+1)
+            else:
+                return self.evaluationFunction(gameState)
+        else:
+            return self.expValue(gameState, agent, depth)
+
+    def getAction(self, gameState):
+        """
+          Returns the expectimax action using self.depth and self.evaluationFunction
+
+          All ghosts should be modeled as choosing uniformly at random from their
+          legal moves.
+        """
+        "*** YOUR CODE HERE ***"
+        self.expectimax(gameState)
+        return self.action
+
+def closestItemDistance(currentGameState, items):
+    """Returns the maze distance to the closest item present in items"""
+
+    # BFS to find the maze distance from position to closest item
+    walls = currentGameState.getWalls()
+
+    start = currentGameState.getPacmanPosition()
+
+    # Dictionary storing the maze distance from start to any given position
+    distance = {start: 0}
+
+    # Set of visited positions in order to avoid revisiting them again
+    visited = {start}
+
+    queue = util.Queue()
+    queue.push(start)
+
+    while not queue.isEmpty():
+
+        position = x, y = queue.pop()
+
+        if position in items: return distance[position]
+
+        for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
+
+            dx, dy = Actions.directionToVector(action)
+            next_position = nextx, nexty = int(x + dx), int(y + dy)
+
+            if not walls[nextx][nexty] and next_position not in visited:
+                queue.push(next_position)
+                visited.add(next_position)
+                # A single action separates position from next_position, so the distance is 1
+                distance[next_position] = distance[position] + 1
+
+    return None
+
+    """
+      Your expectimax agent (question 4)
+    """
+
     def getAction(self, gameState):
         """
         Returns the expectimax action using self.depth and self.evaluationFunction
