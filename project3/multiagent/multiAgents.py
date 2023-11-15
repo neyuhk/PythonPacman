@@ -13,7 +13,7 @@
 
 
 from util import manhattanDistance
-from game import Directions
+from game import Directions, Actions
 import random, util
 
 from game import Agent
@@ -291,6 +291,42 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         "*** YOUR CODE HERE ***"
         util.raiseNotDefined()
 
+def closestItemDistance(currentGameState, items):
+    """Returns the maze distance to the closest item present in items"""
+
+    # BFS to find the maze distance from position to closest item
+    walls = currentGameState.getWalls()
+
+    start = currentGameState.getPacmanPosition()
+
+    # Dictionary storing the maze distance from start to any given position
+    distance = {start: 0}
+
+    # Set of visited positions in order to avoid revisiting them again
+    visited = {start}
+
+    queue = util.Queue()
+    queue.push(start)
+
+    while not queue.isEmpty():
+
+        position = x, y = queue.pop()
+
+        if position in items: return distance[position]
+
+        for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
+
+            dx, dy = Actions.directionToVector(action)
+            next_position = nextx, nexty = int(x + dx), int(y + dy)
+
+            if not walls[nextx][nexty] and next_position not in visited:
+                queue.push(next_position)
+                visited.add(next_position)
+                # A single action separates position from next_position, so the distance is 1
+                distance[next_position] = distance[position] + 1
+
+    return None
+
 def betterEvaluationFunction(currentGameState):
     """
     Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
@@ -299,6 +335,35 @@ def betterEvaluationFunction(currentGameState):
     DESCRIPTION: <write something here so we know what you did>
     """
     "*** YOUR CODE HERE ***"
+    infinity = float('inf')
+    position = currentGameState.getPacmanPosition()
+    score = currentGameState.getScore()
+    ghostStates = currentGameState.getGhostStates()
+    foodList = currentGameState.getFood().asList()
+    capsuleList = currentGameState.getCapsules()
+
+    if currentGameState.isWin(): return infinity
+    if currentGameState.isLose(): return -infinity
+
+    for ghost in ghostStates:
+        d = manhattanDistance(position, ghost.getPosition())
+        if ghost.scaredTimer > 6 and d < 2:
+            return infinity
+        elif ghost.scaredTimer < 5 and d < 2:
+            return -infinity
+
+    # Distance to closest food pellet
+    # Note that at least one food pellet must exist,
+    # otherwise we would have already won!
+    foodDistance = 1.0 / closestItemDistance(currentGameState, foodList)
+
+    # Distance to closest capsule
+    capsuleDistance = closestItemDistance(currentGameState, capsuleList)
+    capsuleDistance = 0.0 if capsuleDistance is None else 1.0 / capsuleDistance
+
+    # Coefficients are kinda arbitrary but this combination seems to work
+    return 10.0 * foodDistance + 5.0 * score + 0.5 * capsuleDistance
+
     util.raiseNotDefined()
 
 # Abbreviation
